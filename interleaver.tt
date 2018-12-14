@@ -17,6 +17,7 @@ class Interleaver {
     const char* CONTENT;
     const size_t SIZE;
   } FILE;
+  const size_t PSEUDO_SIZE;
   const size_t NUM_OF_BLOCKS;
   const size_t ALING_SIZE;
   private:
@@ -32,20 +33,24 @@ class Interleaver {
         struct stat s;
         if (fstat(fd, &s) < 0)
           throw std::runtime_error("Unable to get stat about file " + file_path + "!");
-        auto size = s.st_size;
+        size_t size = s.st_size;
         auto mapped = mmap(0, size, PROT_READ, MAP_PRIVATE, fd, 0);
         if (mapped == MAP_FAILED)
           throw std::runtime_error("Uname to map file " + file_path + "!");
         
-        decltype(FILE) file = {static_cast<const char*>(mapped), static_cast<size_t>(size)};
+        decltype(FILE) file = {static_cast<const char*>(mapped), size};
         return file;      
       }()),
       
+      //
+      PSEUDO_SIZE(file_size ? file_size : FILE.SIZE),
+      
       // Set number of RS block
-      NUM_OF_BLOCKS(std::ceil(static_cast<double>(FILE.SIZE) / K)),
+      NUM_OF_BLOCKS(std::ceil(static_cast<double>(PSEUDO_SIZE) / K)),
 
       //
       ALING_SIZE(K * NUM_OF_BLOCKS),
+
       
       // Set RS block counter to zero
       _block_cnt(0) {}
@@ -57,7 +62,7 @@ class Interleaver {
 
       size_t j = 0;
       for (size_t i = _block_cnt++; i < ALING_SIZE; i += NUM_OF_BLOCKS) {
-        if (i < FILE.SIZE) {
+        if (i < PSEUDO_SIZE) {
           block[j++] = FILE.CONTENT[i];
         } else {
           if (j < K)

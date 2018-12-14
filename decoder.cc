@@ -1,6 +1,15 @@
 #include <string>
 #include <fstream>
+#include <iostream>
 #include <cmath>
+
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+#include "interleaver.tt"
 
 std::ifstream::pos_type filesize(const std::string& filename)
 {
@@ -8,13 +17,49 @@ std::ifstream::pos_type filesize(const std::string& filename)
     return in.tellg(); 
 }
 
-constexpr int N = 7;
-constexpr int K = 4;
+constexpr int N = 255;
+constexpr int K = 147;
+
+class OutputFileMapper {
+public:
+  char* const CONTENT;
+  const size_t SIZE;
+private:
+  int fd;
+public:
+  OutputFileMapper(const std::string& file_path, size_t size):
+  CONTENT([=] {
+    fd = open(file_path.c_str(), O_RDWR | O_CREAT, (mode_t)0600);
+    if (fd < 0)
+      throw std::runtime_error("Unable to create file " + file_path + "!");
+
+    lseek(fd, size - 1, SEEK_SET);
+    write(fd, "", 1);
+    auto mapped = mmap(0, size, PROT_WRITE, MAP_SHARED, fd, 0);
+    if (mapped == MAP_FAILED)
+      throw std::runtime_error("Uname to map file " + file_path + "!");
+    return static_cast<char*>(mapped);
+  }()),
+  
+  SIZE(size) {}
+
+  ~OutputFileMapper() {
+    msync((void*)CONTENT, SIZE, MS_SYNC);
+    munmap((void*)CONTENT, SIZE);
+    close(fd);
+  }
+};
 
 int main(int argc,char *argv[]) {
     std::string output_filename = argv[1];
     output_filename += ".ok";
-    size_t wr_size = filesize(argv[1]);
-    auto orig_size = wr_size - (std::ceil(static_cast<double>(wr_size) / N) * (N - K));
-    return 0;
+    const size_t wr_size = filesize(argv[1]);
+    const size_t B = wr_size - (N - 1) * std::ceil((double)wr_size / N);
+    const size_t S = N * std::ceil((double)wr_size / N) - wr_size;
+    const size_t orig_size = wr_size - (N - K) * (B+ S);
+    //std::cout << wr_size << ' ' << B << ' ' << S << ' ' << orig_size << std::endl;
+    Interleaver<N, K> interleaver(argv[1]);
+    OutputFileMapper mapper(output_filename, orig_size);
+    memcpy(mapper.CONTENT, interleaver.FILE.CONTENT, orig_size);
+    return 0; 
 }
