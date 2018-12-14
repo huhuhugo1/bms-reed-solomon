@@ -57,9 +57,19 @@ int main(int argc,char *argv[]) {
     const size_t B = wr_size - (N - 1) * std::ceil((double)wr_size / N);
     const size_t S = N * std::ceil((double)wr_size / N) - wr_size;
     const size_t orig_size = wr_size - (N - K) * (B+ S);
-    //std::cout << wr_size << ' ' << B << ' ' << S << ' ' << orig_size << std::endl;
-    Interleaver<N, K> interleaver(argv[1]);
+
+    std::array<char, N> block;
+    Interleaver<N, K> interleaver(argv[1], orig_size);
     OutputFileMapper mapper(output_filename, orig_size);
-    memcpy(mapper.CONTENT, interleaver.FILE.CONTENT, orig_size);
+    ezpwd::RS<N, K> decoder;
+    for (size_t i = 0; i < B + S; ++i) {
+      auto x = interleaver.getBlock(block);
+      memcpy(block.data() + K, interleaver.FILE.CONTENT + orig_size + i * (N - K), N - K);
+      decoder.decode(block);
+      for (size_t line = 0; line < x; ++line) {
+        mapper.CONTENT[line * (B + S) + i] = block[line];
+      }
+    }
+    
     return 0; 
 }
