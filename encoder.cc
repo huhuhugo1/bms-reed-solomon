@@ -2,6 +2,7 @@
 
 #include "rs"
 #include "interleaver.tt"
+#include "outputFileMapper.tt"
 
 constexpr size_t N = 255;
 constexpr size_t K = 147;
@@ -15,14 +16,23 @@ int main(int argc, char *argv[]) {
 
   std::string output_filename = argv[1];
   output_filename += ".out";
-  
-  std::ofstream out(output_filename, std::ios_base::out|std::ios_base::binary);
-  out.write(interleaver.FILE.CONTENT, interleaver.FILE.SIZE);
+
+  size_t out_size = interleaver.FILE.SIZE + interleaver.NUM_OF_BLOCKS * (N- K );
+  OutputFileMapper mapper(output_filename, out_size);
+  for (size_t i = 0; i < interleaver.FILE.SIZE; ++i) {
+    mapper.CONTENT[i] = interleaver.FILE.CONTENT[i];
+  }
 
   ezpwd::RS<N, K> encoder;
+  size_t block_cnt = 0;
   while (interleaver.getBlock(block)) {
     encoder.encode(block);
-    out.write(block.data() + K, N-K);
+    for (size_t i = 0; i < N-K; ++i) {
+      size_t idx = interleaver.FILE.SIZE + i * interleaver.NUM_OF_BLOCKS + block_cnt;
+      mapper.CONTENT[idx] = block[K + i];
+    }
+    //out.write(block.data() + K, N-K);
+    ++block_cnt;
   }
     
   return 0;
