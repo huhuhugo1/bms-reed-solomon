@@ -32,7 +32,7 @@ int main(int argc,char *argv[]) {
       auto x = interleaver.getBlock(block);
       for (size_t j = 0; j < N-K; ++j) {
         size_t idx = orig_size + j * interleaver.NUM_OF_BLOCKS + i - tail;
-        if (i < tail) idx += interleaver.NUM_OF_BLOCKS - tail;
+        if (i < tail) idx += interleaver.NUM_OF_BLOCKS;
         block[K+j] = interleaver.FILE.CONTENT[idx];
       }
       //memcpy(block.data() + K, interleaver.FILE.CONTENT + orig_size + i * (N - K), N - K);
