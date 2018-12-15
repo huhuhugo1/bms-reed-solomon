@@ -30,7 +30,8 @@ int main(int argc,char *argv[]) {
     for (size_t i = 0; i < B + S; ++i) {
       auto x = interleaver.getBlock(block);
       for (size_t j = 0; j < N-K; ++j) {
-        block[K+j] = interleaver.FILE.CONTENT[interleaver.FILE.SIZE + j * interleaver.NUM_OF_BLOCKS + j];
+        size_t idx = orig_size + j * interleaver.NUM_OF_BLOCKS + i;
+        block[K+j] = interleaver.FILE.CONTENT[idx];
       }
       //memcpy(block.data() + K, interleaver.FILE.CONTENT + orig_size + i * (N - K), N - K);
       decoder.decode(block);
