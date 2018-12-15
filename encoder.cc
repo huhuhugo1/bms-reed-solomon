@@ -25,10 +25,12 @@ int main(int argc, char *argv[]) {
 
   ezpwd::RS<N, K> encoder;
   size_t block_cnt = 0;
+  size_t tail = interleaver.FILE.SIZE % interleaver.NUM_OF_BLOCKS;
   while (interleaver.getBlock(block)) {
     encoder.encode(block);
     for (size_t i = 0; i < N-K; ++i) {
       size_t idx = interleaver.FILE.SIZE + i * interleaver.NUM_OF_BLOCKS + block_cnt;
+      if (block_cnt < tail) idx += interleaver.NUM_OF_BLOCKS - tail;
       mapper.CONTENT[idx] = block[K + i];
     }
     //out.write(block.data() + K, N-K);
