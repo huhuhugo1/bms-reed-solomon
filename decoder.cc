@@ -31,7 +31,7 @@ int main(int argc,char *argv[]) {
     for (size_t i = 0; i < B + S; ++i) {
       auto x = interleaver.getBlock(block);
       for (size_t j = 0; j < N-K; ++j) {
-        size_t idx = orig_size + j * interleaver.NUM_OF_BLOCKS + i;
+        size_t idx = orig_size + j * interleaver.NUM_OF_BLOCKS + i - tail;
         if (i < tail) idx += interleaver.NUM_OF_BLOCKS - tail;
         block[K+j] = interleaver.FILE.CONTENT[idx];
       }

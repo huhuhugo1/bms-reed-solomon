@@ -29,8 +29,8 @@ int main(int argc, char *argv[]) {
   while (interleaver.getBlock(block)) {
     encoder.encode(block);
     for (size_t i = 0; i < N-K; ++i) {
-      size_t idx = interleaver.FILE.SIZE + i * interleaver.NUM_OF_BLOCKS + block_cnt;
-      if (block_cnt < tail) idx += interleaver.NUM_OF_BLOCKS - tail;
+      size_t idx = interleaver.FILE.SIZE + i * interleaver.NUM_OF_BLOCKS + block_cnt - tail;
+      if (block_cnt < tail) idx += interleaver.NUM_OF_BLOCKS;
       mapper.CONTENT[idx] = block[K + i];
     }
     //out.write(block.data() + K, N-K);
