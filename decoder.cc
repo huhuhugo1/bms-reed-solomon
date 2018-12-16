@@ -69,7 +69,7 @@ int main(int argc,char *argv[]) {
     return 0; 
   
   } catch (const std::exception& e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << "[ERROR]" << e.what() << std::endl;
     return 1;
   }
 }
