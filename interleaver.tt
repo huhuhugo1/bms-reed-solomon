@@ -8,8 +8,6 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 
-#include "rs"
-
 template <size_t N, size_t K>
 class Interleaver {
   public:
@@ -29,14 +27,14 @@ class Interleaver {
       FILE([=]{
         auto fd = open(file_path.c_str(), O_RDONLY);
         if (fd < 0)
-          throw std::runtime_error("Unable to open file " + file_path + "!");
+          throw std::runtime_error("[Interleaver] Unable to open file " + file_path + "!");
         struct stat s;
         if (fstat(fd, &s) < 0)
-          throw std::runtime_error("Unable to get stat about file " + file_path + "!");
+          throw std::runtime_error("[Interleaver] Unable to get stat about file " + file_path + "!");
         size_t size = s.st_size;
         auto mapped = mmap(0, size, PROT_READ, MAP_PRIVATE, fd, 0);
         if (mapped == MAP_FAILED)
-          throw std::runtime_error("Uname to map file " + file_path + "!");
+          throw std::runtime_error("[Interleaver] Uname to map file " + file_path + "!");
         
         decltype(FILE) file = {static_cast<const char*>(mapped), size};
         return file;      
@@ -74,32 +72,3 @@ class Interleaver {
       return K - zeros;
     }
 };
-
-/*int main(int argc, char* argv[]) {
-  Interleaver<255, 147> interleaver(argv[1]);
-  std::array<char, 255> vec;
-  
-  std::ofstream out(std::string(argv[1]) + ".out", std::ios_base::out|std::ios_base::binary);
-  out.write((const char*)interleaver.FILE.CONTENT, interleaver.FILE.SIZE);
-  ezpwd::RS<255, 147> rs;
-  while (interleaver.getBlock(vec)) {
-    rs.encode(vec);
-    out.write((const char*)vec.data() + 147, 108);
-  }
-  std::cout << std::endl;*/
-  /*;
-  rs.encode(vec);
-
-      for (auto symbol : vec) {
-      std::cout << std::setfill('0') <<std::setw(2) << std::hex << (int) symbol << ' ';
-    }
-
-  std::cout << std::endl;
-  rs.decode(vec);
-
-  
-  for (auto symbol : vec) {
-      std::cout << std::setfill('0') <<std::setw(2) << std::hex << (int) symbol << ' ';
-    }
-  return 0;
-}*/
