@@ -4,20 +4,25 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+// Class for easy non-sequential writing to file
 class OutputFileMapper {
   char* const CONTENT;
   const size_t SIZE;
   int fd;
 
 public:
+  // Constructor
   OutputFileMapper(const std::string& file_path, size_t size):
     CONTENT([=] {
+      // Open filedescriptor
       fd = open(file_path.c_str(), O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
       if (fd < 0)
         throw std::runtime_error("[OutputFileMapper] Unable to create file " + file_path + "!");
-
+      // Jump to expected end of file
       lseek(fd, size - 1, SEEK_SET);
+      // Write zero - this creates a file of required size
       ::write(fd, "", 1);
+      // Map file content to memory address space
       auto mapped = mmap(0, size, PROT_WRITE, MAP_SHARED, fd, 0);
       if (mapped == MAP_FAILED)
         throw std::runtime_error("[OutputFileMapper] Uname to map file " + file_path + "!");
@@ -32,7 +37,8 @@ public:
     close(fd);
   }
 
-  void write(auto data, size_t size, size_t array_offset = 0, size_t content_offset = 0, size_t step = 1) {
+  // Generic write method
+  void write(const auto& data, size_t size, size_t array_offset = 0, size_t content_offset = 0, size_t step = 1) const {
     size_t idx = content_offset;
 
     for (size_t i = 0; i < size; ++i) {

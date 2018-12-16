@@ -8,9 +8,9 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 
+// Class for interleaved reading from file
 template <size_t N, size_t K>
 class Interleaver {
-  public:
   const struct {
     const char* CONTENT;
     const size_t SIZE;
@@ -22,16 +22,20 @@ class Interleaver {
   size_t _block_cnt;
 
   public: 
+    // Constructor
     Interleaver(const std::string& file_path, size_t file_size = 0):
 
       FILE([=]{
+        // Open file descriptor
         auto fd = open(file_path.c_str(), O_RDONLY);
         if (fd < 0)
           throw std::runtime_error("[Interleaver] Unable to open file " + file_path + "!");
+        // Get file size
         struct stat s;
         if (fstat(fd, &s) < 0)
           throw std::runtime_error("[Interleaver] Unable to get stat about file " + file_path + "!");
         size_t size = s.st_size;
+        // Map file to memory address space
         auto mapped = mmap(0, size, PROT_READ, MAP_PRIVATE, fd, 0);
         if (mapped == MAP_FAILED)
           throw std::runtime_error("[Interleaver] Uname to map file " + file_path + "!");
@@ -40,19 +44,19 @@ class Interleaver {
         return file;      
       }()),
       
-      //
+      // In case we dont want to work with whole file
       PSEUDO_SIZE(file_size ? file_size : FILE.SIZE),
       
-      // Set number of RS block
+      // Set number of ReedSolomon blocks
       NUM_OF_BLOCKS(std::ceil(static_cast<double>(PSEUDO_SIZE) / K)),
 
-      //
+      // Size of interleaving matrix
       ALING_SIZE(K * NUM_OF_BLOCKS),
 
-      
       // Set RS block counter to zero
       _block_cnt(0) {}
 
+    // Get interleaved block
     size_t getBlock(std::array<char, N>& block) {
       size_t zeros = 0;
       if (_block_cnt == NUM_OF_BLOCKS)
@@ -70,5 +74,32 @@ class Interleaver {
       }
 
       return K - zeros;
+    }
+
+    // Generic read method
+    void read(auto& data, size_t size, size_t array_offset = 0, size_t content_offset = 0, size_t step = 1) const {
+      size_t idx = content_offset;
+
+      for (size_t i = 0; i < size; ++i) {
+        if (idx >= FILE.SIZE)
+          throw std::runtime_error("[Interleaver] Reading out of bounds of file!");
+        data[array_offset + i] = FILE.CONTENT[idx];
+        idx += step;
+      }
+    }
+
+    // Returns size of mapped file
+    size_t size() const {
+      return FILE.SIZE;
+    }
+
+    // Returns raw pointer to mapped file
+    const char* data() const {
+      return FILE.CONTENT;
+    }
+
+    // Returns interleaving matrix wifth
+    size_t width() const {
+      return NUM_OF_BLOCKS;
     }
 };

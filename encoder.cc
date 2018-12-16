@@ -21,28 +21,39 @@ int main(int argc, char *argv[]) {
     std::string output_filename = argv[1];
     output_filename += ".out";
     
+    // Initialize interleaver
     Interleaver<N, K> interleaver(argv[1]);
     std::array<char, N> block;
 
-    size_t out_size = interleaver.FILE.SIZE + interleaver.NUM_OF_BLOCKS * (N - K);
+    // Calc size of encoded file
+    size_t out_size = interleaver.size() + interleaver.width() * (N - K);
     OutputFileMapper mapper(output_filename, out_size);
-    mapper.write(interleaver.FILE.CONTENT, interleaver.FILE.SIZE);
+    mapper.write(interleaver.data(), interleaver.size());
 
+    // Initialize encoder
     ezpwd::RS<N, K> encoder;
-    size_t tail = interleaver.FILE.SIZE % interleaver.NUM_OF_BLOCKS;
+
+    // Calc number of blocks with full size K
+    size_t tail = interleaver.size() % interleaver.width();
+
+    // For each block
     for (size_t block_cnt = 0; interleaver.getBlock(block); ++block_cnt) {
+      // Add parity symbols
       encoder.encode(block);
       
-      size_t offset = interleaver.FILE.SIZE - tail + block_cnt;
+      // Calc start position of block in output file
+      size_t offset = interleaver.size() - tail + block_cnt;
       if (block_cnt < tail) 
-        offset += interleaver.NUM_OF_BLOCKS;
-      mapper.write(block, N-K, K, offset, interleaver.NUM_OF_BLOCKS); 
+        offset += interleaver.width();
+
+      // Write to output file 
+      mapper.write(block, N-K, K, offset, interleaver.width()); 
     }
       
     return 0;
 
   } catch (const std::exception& e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << "[ERROR]" << e.what() << std::endl;
     return 1;
   }
 }
